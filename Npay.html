@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <title>NPayment</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 450px;
+      margin: 50px auto;
+      text-align: center;
+    }
+    input, button {
+      font-size: 1.2em;
+      padding: 8px;
+      margin: 10px 0;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .hidden { display: none; }
+    #status, #nfcStatus {
+      font-weight: bold;
+      font-size: 1.5em;
+      margin-top: 20px;
+    }
+    #tapArea {
+      margin-top: 20px;
+      padding: 50px;
+      border: 3px dashed #333;
+      user-select: none;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Npayment</h1>
+<h3>Please activate NFC</h3>
+
+<!-- Senha -->
+<div id="senhaArea">
+  <input type="password" id="passInput" placeholder="Digite a senha" />
+  <button id="btnPass">Entrar</button>
+  <div id="passMsg" style="color:red; min-height:1.5em;"></div>
+</div>
+
+<!-- Escolha -->
+<div id="opcoes" class="hidden">
+  <button id="btnLeitorNFC">Leitor NFC</button>
+  <button id="btnClicker">Clicker</button>
+</div>
+
+<!-- NFC -->
+<div id="nfcArea" class="hidden">
+  <div id="nfcStatus">Aguardando leitura NFC...</div>
+</div>
+
+<!-- Clicker -->
+<div id="clickerArea" class="hidden">
+  <div id="configClicker">
+    <input type="number" id="numTaps" placeholder="Número de toques" min="1" />
+    <button id="btnStartTaps">Começar Cliques</button>
+  </div>
+  <div id="tapArea" class="hidden">Clique aqui!</div>
+  <div id="status">Toques: 0</div>
+</div>
+
+<script>
+  // Elementos
+  const senhaArea = document.getElementById('senhaArea');
+  const passInput = document.getElementById('passInput');
+  const btnPass = document.getElementById('btnPass');
+  const passMsg = document.getElementById('passMsg');
+
+  const opcoes = document.getElementById('opcoes');
+  const btnLeitorNFC = document.getElementById('btnLeitorNFC');
+  const btnClicker = document.getElementById('btnClicker');
+
+  const nfcArea = document.getElementById('nfcArea');
+  const nfcStatus = document.getElementById('nfcStatus');
+
+  const clickerArea = document.getElementById('clickerArea');
+  const configClicker = document.getElementById('configClicker');
+  const numTapsInput = document.getElementById('numTaps');
+  const btnStartTaps = document.getElementById('btnStartTaps');
+  const tapArea = document.getElementById('tapArea');
+  const status = document.getElementById('status');
+
+  let requiredTaps = 0;
+  let currentTaps = 0;
+
+  // Senha
+  btnPass.addEventListener('click', () => {
+    const senha = passInput.value.trim();
+    if (senha === '6566') {
+      passMsg.style.color = 'green';
+      passMsg.textContent = 'Acesso liberado!';
+      senhaArea.classList.add('hidden');
+      opcoes.classList.remove('hidden');
+    } else {
+      passMsg.style.color = 'red';
+      passMsg.textContent = 'Senha incorreta.';
+    }
+  });
+
+  // NFC
+  btnLeitorNFC.addEventListener('click', () => {
+    opcoes.classList.add('hidden');
+    nfcArea.classList.remove('hidden');
+
+    if ('NDEFReader' in window) {
+      const reader = new NDEFReader();
+      reader.scan().then(() => {
+        nfcStatus.textContent = 'Aproxime a tag NFC...';
+
+        reader.onreading = () => {
+          nfcStatus.textContent = '✅ Aprovado via NFC!';
+          nfcStatus.style.color = 'green';
+        };
+
+        reader.onerror = () => {
+          nfcStatus.textContent = 'Erro na leitura NFC.';
+          nfcStatus.style.color = 'red';
+        };
+      }).catch(err => {
+        nfcStatus.textContent = 'Erro ao iniciar NFC: ' + err;
+        nfcStatus.style.color = 'red';
+      });
+    } else {
+      nfcStatus.textContent = 'NFC não suportado neste navegador.';
+      nfcStatus.style.color = 'red';
+    }
+  });
+
+  // Clicker
+  btnClicker.addEventListener('click', () => {
+    opcoes.classList.add('hidden');
+    clickerArea.classList.remove('hidden');
+  });
+
+  btnStartTaps.addEventListener('click', () => {
+    requiredTaps = parseInt(numTapsInput.value, 10);
+    currentTaps = 0;
+
+    if (isNaN(requiredTaps) || requiredTaps < 1) {
+      status.textContent = 'Número inválido.';
+      status.style.color = 'red';
+      return;
+    }
+
+    // Esconde área de configuração e mostra área de clique
+    configClicker.classList.add('hidden');
+    tapArea.classList.remove('hidden');
+    senhaArea.classList.remove('hidden'); // Volta o campo da senha
+
+    passMsg.textContent = '';
+    passInput.value = '';
+    status.textContent = `Toques: 0 / ${requiredTaps}`;
+    status.style.color = 'black';
+  });
+
+  tapArea.addEventListener('click', () => {
+    currentTaps++;
+    if (currentTaps >= requiredTaps) {
+      status.textContent = `✅ Aprovado com ${currentTaps} toques!`;
+      status.style.color = 'green';
+    } else {
+      status.textContent = `Toques: ${currentTaps} / ${requiredTaps}`;
+      status.style.color = 'red';
+    }
+  });
+</script>
+
+</body>
+</html>
